@@ -3,9 +3,6 @@ package lexer
 import "testing"
 
 func TestRuneIsAlpha(t *testing.T) {
-	//var a rune = 'a'
-	//var z rune = 'z'
-	//t.Fatalf("%d %d", a, z)
 	table := map[rune]bool{
 		'a': true,
 		'g': true,
