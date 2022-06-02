@@ -12,7 +12,7 @@ func TestTokeniseSingleTokens(t *testing.T) {
         "ABC_123": IdentifierTok,
         "+": IdentifierTok,
         "-": IdentifierTok,
-        "12a": IdentifierTok,
+        "; comment\na": IdentifierTok,
         "12": IntTok,
         "0": IntTok,
         "-1234": IntTok,
@@ -20,7 +20,7 @@ func TestTokeniseSingleTokens(t *testing.T) {
         "-0.5": FloatTok,
         "let": LetTok,
         "Let": IdentifierTok,
-        " if\n": IfTok,
+        "if": IfTok,
         "iff": IdentifierTok,
     }
 
