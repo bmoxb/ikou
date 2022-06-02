@@ -41,7 +41,7 @@ func (l *lexer) processChar(c, peek rune) {
 		l.pos = 0
 
 		if l.currentState == commentState {
-			l.addToken(CommentTok)
+			l.discardToken()
 		}
 
 		return
@@ -64,6 +64,8 @@ func (l *lexer) processChar(c, peek rune) {
 				l.currentState = intState
 			} else if runeIsAlpha(c) {
 				l.currentState = identState
+			} else {
+				l.discardToken()
 			}
 		}
 
@@ -89,7 +91,7 @@ func (l *lexer) processChar(c, peek rune) {
 	case intState:
 		if c == '.' {
 			l.currentState = floatState
-		} else if !runeIsNumeral(peek) {
+		} else if peek != '.' && !runeIsNumeral(peek) {
 			l.addToken(IntTok)
 		}
 
@@ -114,12 +116,17 @@ func (l *lexer) addToken(ty TokenType) {
 	l.tokens = append(l.tokens, tok)
 }
 
+func (l *lexer) discardToken() {
+	l.currentState = initialState
+	l.currentString.Reset()
+}
+
 type state int
 
 const (
 	initialState state = iota
-	commentState
 	identState
+	commentState
 	intState
 	floatState
 )

@@ -19,7 +19,6 @@ const (
 	OpenTok       TokenType = iota // (
 	CloseTok                       // )
 	ColonTok                       // :
-	CommentTok                     // ; my comment \n
 	IntTok                         // 20
 	FloatTok                       // 26.05
 	IdentifierTok                  // identifier
