@@ -16,14 +16,14 @@ func Tokenise(input string) []Token {
 		pos:          0,
 	}
 
-    runes := []rune(input)
+	runes := []rune(input)
 	c := runes[0]
 	for _, peek := range runes[1:] {
 		l.processChar(c, peek)
 		c = peek
 	}
 	l.processChar(c, 0)
-    l.eof()
+	l.eof()
 
 	return l.tokens
 }
@@ -60,15 +60,19 @@ func (l *lexer) processChar(c, peek rune) {
 			l.addToken(OpenTok)
 		case ')':
 			l.addToken(CloseTok)
-        case ':':
-            l.addToken(ColonTok)
+		case ':':
+			l.addToken(ColonTok)
 		case ';':
 			l.currentState = commentState
 		default:
 			if runeIsNumeral(c) || (c == '-' && runeIsNumeral(peek)) {
 				l.currentState = intState
 			} else if runeIsIdentChar(c) {
-				l.currentState = identState
+				if runeIsIdentChar(peek) {
+					l.currentState = identState
+				} else {
+					l.addToken(IdentifierTok)
+				}
 			} else {
 				l.discardToken()
 			}
@@ -108,16 +112,16 @@ func (l *lexer) processChar(c, peek rune) {
 }
 
 func (l *lexer) eof() {
-    finalTokenTypeMap := map[state]TokenType{
-        identState: IdentifierTok,
-        intState: IntTok,
-        floatState: FloatTok,
-    }
+	finalTokenTypeMap := map[state]TokenType{
+		identState: IdentifierTok,
+		intState:   IntTok,
+		floatState: FloatTok,
+	}
 
-    ty, isFinalToken := finalTokenTypeMap[l.currentState]
-    if isFinalToken {
-        l.addToken(ty)
-    }
+	ty, isFinalToken := finalTokenTypeMap[l.currentState]
+	if isFinalToken {
+		l.addToken(ty)
+	}
 }
 
 func (l *lexer) addToken(ty TokenType) {
