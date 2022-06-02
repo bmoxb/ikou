@@ -66,7 +66,11 @@ func (l *lexer) processChar(c, peek rune) {
 			l.currentState = commentState
 		default:
 			if runeIsNumeral(c) || (c == '-' && runeIsNumeral(peek)) {
-				l.currentState = intState
+				if runeIsNumeral(peek) || peek == '.' {
+					l.currentState = intState
+				} else {
+					l.addToken(IntTok)
+				}
 			} else if runeIsIdentChar(c) {
 				if runeIsIdentChar(peek) {
 					l.currentState = identState
