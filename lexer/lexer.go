@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"log"
+	//"log"
 	"strings"
 )
 
@@ -35,7 +35,8 @@ type lexer struct {
 }
 
 func (l *lexer) processChar(c, peek rune) {
-	log.Printf("processing character '%c' (peek '%c') in state %d with current string \"%s\"", c, peek, l.currentState, l.currentString.String())
+	//log.Printf("processing character '%c' (peek '%c') in state %d with current string \"%s\"", c, peek, l.currentState, l.currentString.String())
+
 	if c == '\n' {
 		l.line += 1
 		l.pos = 0
