@@ -2,12 +2,14 @@ package lexer
 
 import (
 	//"log"
+	"errors"
+	"fmt"
 	"strings"
 )
 
-func Tokenise(input string) []Token {
+func Tokenise(input string) ([]Token, error) {
 	if input == "" {
-		return make([]Token, 0)
+		return make([]Token, 0), nil
 	}
 
 	l := lexer{
@@ -18,14 +20,24 @@ func Tokenise(input string) []Token {
 
 	runes := []rune(input)
 	c := runes[0]
+
 	for _, peek := range runes[1:] {
-		l.processChar(c, peek)
+		err := l.processChar(c, peek)
+		if err != nil {
+			return nil, err
+		}
+
 		c = peek
 	}
-	l.processChar(c, 0)
+
+	err := l.processChar(c, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	l.eof()
 
-	return l.tokens
+	return l.tokens, nil
 }
 
 type lexer struct {
@@ -36,7 +48,7 @@ type lexer struct {
 	pos           uint
 }
 
-func (l *lexer) processChar(c, peek rune) {
+func (l *lexer) processChar(c, peek rune) error {
 	//log.Printf("processing character '%c' (peek '%c') in state %d with current string \"%s\"", c, peek, l.currentState, l.currentString.String())
 
 	if c == '\n' {
@@ -47,7 +59,7 @@ func (l *lexer) processChar(c, peek rune) {
 			l.discardToken()
 		}
 
-		return
+		return nil
 	}
 
 	l.pos += 1
@@ -71,6 +83,8 @@ func (l *lexer) processChar(c, peek rune) {
 				} else {
 					l.addToken(IntTok)
 				}
+			} else if c == '.' && runeIsNumeral(peek) {
+				l.currentState = floatState
 			} else if runeIsIdentChar(c) {
 				if runeIsIdentChar(peek) {
 					l.currentState = identState
@@ -78,7 +92,11 @@ func (l *lexer) processChar(c, peek rune) {
 					l.addToken(IdentifierTok)
 				}
 			} else {
-				l.discardToken()
+				if runeIsOneOf(c, " \t\n\r") {
+					l.discardToken()
+				} else {
+					return errors.New(fmt.Sprintf("unexpected character: %q", c))
+				}
 			}
 		}
 
@@ -113,6 +131,8 @@ func (l *lexer) processChar(c, peek rune) {
 			l.addToken(FloatTok)
 		}
 	}
+
+	return nil
 }
 
 func (l *lexer) eof() {

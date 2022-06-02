@@ -23,10 +23,12 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"  -  ":        tt(IdentifierTok, "-"),
 		"  +  ":        tt(IdentifierTok, "+"),
 		"\t--  ":       tt(IdentifierTok, "--"),
-		" a\\":         tt(IdentifierTok, "a"),
+		" a":           tt(IdentifierTok, "a"),
 		"; comment\na": tt(IdentifierTok, "a"),
 		"12":           tt(IntTok, "12"),
 		"0":            tt(IntTok, "0"),
+		"1.":           tt(FloatTok, "1."),
+		".1":           tt(FloatTok, ".1"),
 		"-1234":        tt(IntTok, "-1234"),
 		"12.5":         tt(FloatTok, "12.5"),
 		"-0.5":         tt(FloatTok, "-0.5"),
@@ -37,9 +39,11 @@ func TestTokeniseSingleTokens(t *testing.T) {
 	}
 
 	for input, expected := range table {
-		tokens := Tokenise(input)
+		tokens, err := Tokenise(input)
 
-		if len(tokens) != 1 {
+		if err != nil {
+			t.Errorf("Tokenise(%#v) produced unexpected error: %v", input, err)
+		} else if len(tokens) != 1 {
 			t.Errorf("Tokenise(%#v) expected to return 1 token but instead returned %d tokens", input, len(tokens))
 		} else {
 			tok := tokens[0]
@@ -53,6 +57,21 @@ func TestTokeniseSingleTokens(t *testing.T) {
 			}
 		}
 	}
+
+	invalid := []string{
+		"1.2.1",
+		".",
+		"@",
+		"a\\",
+	}
+
+	for _, input := range invalid {
+		_, err := Tokenise(input)
+
+		if err == nil {
+			t.Errorf("Input %#v is invalid but no error was returned during lexing", input)
+		}
+	}
 }
 
 func TestTokeniseMultipleTokens(t *testing.T) {
@@ -63,9 +82,11 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 	}
 
 	for input, expected := range table {
-		tokens := Tokenise(input)
+		tokens, err := Tokenise(input)
 
-		if len(tokens) != len(expected) {
+		if err != nil {
+			t.Errorf("Tokenise(%#v) produced unexpected error: %v", input, err)
+		} else if len(tokens) != len(expected) {
 			t.Errorf("Tokenise(%#v) returned %d tokens but %d were expected", input, len(tokens), len(expected))
 		} else {
 			for i, tok := range tokens {
