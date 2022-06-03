@@ -2,7 +2,6 @@ package lexer
 
 import (
 	//"log"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -17,11 +16,18 @@ func Tokenise(input string) ([]Token, error) {
 		pos:          TokenPosition{Line: 1, HorizontalPosition: 0},
 	}
 
+	lines := strings.Split(input, "\n")
+	linesIndex := 0
+
 	runes := []rune(input)
 	c := runes[0]
 
 	for _, peek := range runes[1:] {
-		err := l.processChar(c, peek)
+		if c == '\n' {
+			linesIndex += 1
+		}
+
+		err := l.processChar(c, peek, lines[linesIndex])
 		if err != nil {
 			return nil, err
 		}
@@ -29,7 +35,7 @@ func Tokenise(input string) ([]Token, error) {
 		c = peek
 	}
 
-	err := l.processChar(c, 0)
+	err := l.processChar(c, 0, lines[linesIndex])
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +52,7 @@ type lexer struct {
 	pos           TokenPosition
 }
 
-func (l *lexer) processChar(c, peek rune) error {
+func (l *lexer) processChar(c, peek rune, currentLine string) error {
 	//log.Printf("processing character '%c' (peek '%c') in state %d with current string \"%s\"", c, peek, l.currentState, l.currentString.String())
 
 	if c == '\n' {
@@ -93,7 +99,8 @@ func (l *lexer) processChar(c, peek rune) error {
 				if runeIsOneOf(c, " \t\n\r") {
 					l.discardToken()
 				} else {
-					return errors.New(fmt.Sprintf("unexpected character: %q", c))
+					l.pos.HorizontalPosition -= 1
+					return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("unexpected character: %q", c)}
 				}
 			}
 		}
@@ -125,7 +132,9 @@ func (l *lexer) processChar(c, peek rune) error {
 		}
 
 	case floatState:
-		if !runeIsNumeral(peek) {
+		if peek == '.' {
+			return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("found multiple decimal point characters found in floating-point literal")}
+		} else if !runeIsNumeral(peek) {
 			l.addToken(FloatTok)
 		}
 	}
