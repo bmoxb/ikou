@@ -11,6 +11,10 @@ func tt(ty TokenType, s string) tokenTest {
 	return tokenTest{ty, s}
 }
 
+func tp(line, pos uint) TokenPosition {
+	return TokenPosition{Line: line, HorizontalPosition: pos}
+}
+
 func TestTokeniseSingleTokens(t *testing.T) {
 	table := map[string]tokenTest{
 		" (":           tt(OpenTok, "("),
@@ -92,6 +96,30 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 			for i, tok := range tokens {
 				if (tok.Type != expected[i].ty) || (tok.OriginalString != expected[i].s) {
 					t.Errorf("Tokenise(%#v) returned %v where a token of type %v with string %#v was expected", input, tok, expected[i].ty, expected[i].s)
+				}
+			}
+		}
+	}
+}
+
+func TestTokenisePositionLine(t *testing.T) {
+	table := map[string][]TokenPosition{
+		"( 21 )":           []TokenPosition{tp(1, 1), tp(1, 4), tp(1, 6)},
+		"12.5\n10":         []TokenPosition{tp(1, 4), tp(2, 2)},
+		"; comment\nabc\n": []TokenPosition{tp(2, 3)},
+	}
+
+	for input, positions := range table {
+		tokens, err := Tokenise(input)
+
+		if err != nil {
+			t.Errorf("Tokenise(%#v) produced unexpected error: %v", input, err)
+		} else if len(tokens) != len(positions) {
+			t.Errorf("Tokenise(%#v) returned %d tokens but %d were expected", input, len(tokens), len(positions))
+		} else {
+			for i, tok := range tokens {
+				if tok.Position != positions[i] {
+					t.Errorf("Tokenise(%#v) gave %v which was expected to be at %v", input, tok, positions[i])
 				}
 			}
 		}

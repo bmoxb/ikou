@@ -14,8 +14,7 @@ func Tokenise(input string) ([]Token, error) {
 
 	l := lexer{
 		currentState: initialState,
-		line:         1,
-		pos:          0,
+		pos:          TokenPosition{Line: 1, HorizontalPosition: 0},
 	}
 
 	runes := []rune(input)
@@ -44,16 +43,15 @@ type lexer struct {
 	tokens        []Token
 	currentState  state
 	currentString strings.Builder
-	line          uint
-	pos           uint
+	pos           TokenPosition
 }
 
 func (l *lexer) processChar(c, peek rune) error {
 	//log.Printf("processing character '%c' (peek '%c') in state %d with current string \"%s\"", c, peek, l.currentState, l.currentString.String())
 
 	if c == '\n' {
-		l.line += 1
-		l.pos = 0
+		l.pos.Line += 1
+		l.pos.HorizontalPosition = 0
 
 		if l.currentState == commentState {
 			l.discardToken()
@@ -62,7 +60,7 @@ func (l *lexer) processChar(c, peek rune) error {
 		return nil
 	}
 
-	l.pos += 1
+	l.pos.HorizontalPosition += 1
 	l.currentString.WriteRune(c)
 
 	switch l.currentState {
@@ -151,7 +149,6 @@ func (l *lexer) eof() {
 func (l *lexer) addToken(ty TokenType) {
 	tok := Token{
 		Type:           ty,
-		Line:           l.line,
 		Position:       l.pos,
 		OriginalString: l.currentString.String(),
 	}

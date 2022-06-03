@@ -4,13 +4,12 @@ import "fmt"
 
 type Token struct {
 	Type           TokenType
-	Line           uint
-	Position       uint
+	Position       TokenPosition
 	OriginalString string
 }
 
 func (t Token) String() string {
-	return fmt.Sprintf("%s token `%s` at line %d, position %d", t.Type, t.OriginalString, t.Line, t.Position)
+	return fmt.Sprintf("%s token %#v at %v", t.Type, t.OriginalString, t.Position)
 }
 
 type TokenType uint
@@ -55,4 +54,13 @@ func (t TokenType) String() string {
 		return "define keyword"
 	}
 	return ""
+}
+
+type TokenPosition struct {
+	Line               uint
+	HorizontalPosition uint
+}
+
+func (t TokenPosition) String() string {
+	return fmt.Sprintf("line %d, horizontal position %d", t.Line, t.HorizontalPosition)
 }
