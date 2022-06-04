@@ -81,23 +81,37 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		case ';':
 			l.currentState = commentState
 		default:
+			// Character is `[0-9]` or character and peek are `-[0-9]` (i.e., negative number).
 			if runeIsNumeral(c) || (c == '-' && runeIsNumeral(peek)) {
+				// If more than just the one numeral then change state, otherwise add the single number as an integer token.
 				if runeIsNumeral(peek) || peek == '.' {
 					l.currentState = intState
 				} else {
 					l.addToken(IntTok)
 				}
+
+				// Character and peek are in the form `\.[0-9]` (i.e., a float literal).
 			} else if c == '.' && runeIsNumeral(peek) {
 				l.currentState = floatState
+
+				// Character could be part of an identifier.
 			} else if runeIsIdentChar(c) {
+				// If peek is also an identifier character then change state.
 				if runeIsIdentChar(peek) {
 					l.currentState = identState
+					// Ensure the identifier is not immediately followed by a number literal.
+				} else if runeIsNumeral(peek) || runeIsOneOf(peek, ".-") {
+					return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and number literal must be separated by whitespace"}
+					// If there is just a single identifier character alone then add it is as an identifier token.
 				} else {
 					l.addToken(IdentifierTok)
 				}
 			} else {
+				// Discard any whitespace characters.
 				if runeIsOneOf(c, " \t\n\r") {
 					l.discardToken()
+
+					// Any non-whitespace unexpected characters result in an error.
 				} else {
 					l.pos.HorizontalPosition -= 1
 					return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("unexpected character: %q", c)}
@@ -106,6 +120,10 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		}
 
 	case identState:
+		if peek == '.' {
+			return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and floating-point literal must be separated by whitespace"}
+		}
+
 		if !runeIsIdentChar(peek) {
 			keywords := map[string]TokenType{
 				"fn":     FunctionTok,
@@ -125,16 +143,25 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		}
 
 	case intState:
+		if !runeIsNumeral(peek) && runeIsIdentChar(peek) {
+			return &LexicalError{pos: l.pos, line: currentLine, msg: "integer literal and identifier must be separated by whitespace"}
+		}
+
 		if c == '.' {
 			l.currentState = floatState
 		} else if peek != '.' && !runeIsNumeral(peek) {
+
 			l.addToken(IntTok)
 		}
 
 	case floatState:
 		if peek == '.' {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("found multiple decimal point characters found in floating-point literal")}
+			return &LexicalError{pos: l.pos, line: currentLine, msg: "found multiple decimal point characters found in floating-point literal"}
 		} else if !runeIsNumeral(peek) {
+			if runeIsIdentChar(peek) {
+				return &LexicalError{pos: l.pos, line: currentLine, msg: "floating-point literal and identifier must be separated by whitespace"}
+			}
+
 			l.addToken(FloatTok)
 		}
 	}
