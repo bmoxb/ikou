@@ -6,6 +6,21 @@ import (
 	"strings"
 )
 
+var keywordMap = map[string]TokenType{
+	"true":   TrueTok,
+	"false":  FalseTok,
+	"lambda": LambdaTok,
+	"if":     IfTok,
+	"let":    LetTok,
+	"define": DefineTok,
+}
+
+var finalTokenTypeMap = map[state]TokenType{
+	identState: IdentifierTok,
+	intState:   IntTok,
+	floatState: FloatTok,
+}
+
 func Tokenise(input string) ([]Token, error) {
 	if input == "" {
 		return make([]Token, 0), nil
@@ -106,6 +121,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 				} else {
 					l.addToken(IdentifierTok)
 				}
+
 			} else {
 				// Discard any whitespace characters.
 				if runeIsOneOf(c, " \t\n\r") {
@@ -125,15 +141,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		}
 
 		if !runeIsIdentChar(peek) {
-			keywords := map[string]TokenType{
-				"fn":     FunctionTok,
-				"lambda": LambdaTok,
-				"if":     IfTok,
-				"let":    LetTok,
-				"define": DefineTok,
-			}
-
-			keyword, isKeyword := keywords[l.currentString.String()]
+			keyword, isKeyword := keywordMap[l.currentString.String()]
 
 			if isKeyword {
 				l.addToken(keyword)
@@ -170,12 +178,6 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 }
 
 func (l *lexer) eof() {
-	finalTokenTypeMap := map[state]TokenType{
-		identState: IdentifierTok,
-		intState:   IntTok,
-		floatState: FloatTok,
-	}
-
 	ty, isFinalToken := finalTokenTypeMap[l.currentState]
 	if isFinalToken {
 		l.addToken(ty)

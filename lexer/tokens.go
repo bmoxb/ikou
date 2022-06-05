@@ -15,35 +15,56 @@ func (t Token) String() string {
 type TokenType uint
 
 const (
-	OpenTok       TokenType = iota // (
-	CloseTok                       // )
-	ColonTok                       // :
-	IntTok                         // 20
-	FloatTok                       // 26.05
-	IdentifierTok                  // identifier
-	FunctionTok                    // fn
-	LambdaTok                      // lambda
-	IfTok                          // if
-	LetTok                         // let
-	DefineTok                      // define
+	OpenTok        TokenType = iota // (
+	CloseTok                        // )
+	SquareOpenTok                   // [
+	SquareCloseTok                  // ]
+	ColonTok                        // :
+	QuoteTok                        // '
+	BackquoteTok                    // ,
+	IntTok                          // 20
+	FloatTok                        // 26.05
+	IdentifierTok                   // identifier
+	StringTok                       // "Hello, world!"
+	CharacterTok                    // \a
+	TrueTok                         // true
+	FalseTok                        // false
+	LambdaTok                       // lambda
+	IfTok                           // if
+	LetTok                          // let
+	DefineTok                       // define
 )
 
 func (t TokenType) String() string {
 	switch t {
 	case OpenTok:
-		return "open bracket"
+		return "open ( bracket"
 	case CloseTok:
-		return "close bracket"
+		return "close ) bracket"
+	case SquareOpenTok:
+		return "square open [ bracket"
+	case SquareCloseTok:
+		return "square close ] bracket"
 	case ColonTok:
-		return "colon"
+		return "colon :"
+	case QuoteTok:
+		return "quote '"
+	case BackquoteTok:
+		return "backquote ,"
 	case IntTok:
-		return "integer"
+		return "integer literal"
 	case FloatTok:
-		return "float"
+		return "float literal"
 	case IdentifierTok:
 		return "identifier"
-	case FunctionTok:
-		return "function keyword"
+	case StringTok:
+		return "string literal"
+	case CharacterTok:
+		return "character literal"
+	case TrueTok:
+		return "true"
+	case FalseTok:
+		return "false"
 	case LambdaTok:
 		return "lambda keyword"
 	case IfTok:

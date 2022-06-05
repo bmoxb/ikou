@@ -1,7 +1,7 @@
 package lexer
 
 func runeIsIdentChar(r rune) bool {
-	return runeIsAlpha(r) || runeIsNumeral(r) || runeIsOneOf(r, "+-/*_")
+	return runeIsAlpha(r) || runeIsNumeral(r) || runeIsOneOf(r, "+-/*_?")
 }
 
 func runeIsAlpha(r rune) bool {
