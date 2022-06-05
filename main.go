@@ -1,17 +1,31 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
 
 import "github.com/bmoxb/ikou/lexer"
 
 func main() {
-	tokens, err := lexer.Tokenise("1.2 \"my string\\n\" hello if( 12.5 ) \"\" ; my comment\n(1254.1 world) ((15))")
+	stdin := bufio.NewReader(os.Stdin)
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	for {
+		fmt.Print("> ")
+		line, _ := stdin.ReadString('\n')
 
-	for _, tok := range tokens {
-		fmt.Println(tok)
+		tokens, err := lexer.Tokenise(line)
+
+		if err != nil {
+			fmt.Println(err)
+
+		} else {
+			for _, tok := range tokens {
+				fmt.Printf("| %v\n", tok)
+			}
+		}
+
+		fmt.Println()
 	}
 }
