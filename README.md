@@ -5,15 +5,16 @@
 ## Roadmap
 
 * [ ] Lexer
-  * [ ] Define all necessary token types
-  * [ ] Handle single character tokens (open close brackets, quotes, etc.)
-  * [ ] Handle number tokens (integers and floats)
+  * [#] Define all necessary token types
+  * [#] Handle single character tokens (open close brackets, quotes, etc.)
+  * [#] Handle number tokens (integers and floats)
   * [ ] Handle character tokens
-  * [ ] Handle identifier tokens
-  * [ ] Handle string tokens
-  * [ ] Handle comments
-  * [ ] Appropriately track positioning of tokens (line number and horizontal position)
+  * [#] Handle identifier tokens
+  * [#] Handle string tokens
+  * [#] Handle comments
+  * [#] Appropriately track positioning of tokens (line number and horizontal position)
   * [ ] Produce useful error messages
+  * [ ] Thorough testing
 * [ ] Parser
 * [ ] Bytecode generation
 * [ ] Virtual machine (bytecode execution)

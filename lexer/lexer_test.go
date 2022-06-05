@@ -56,13 +56,18 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"Let": tt(IdentifierTok, "Let"),
 		"if":  tt(IfTok, "if"),
 		"iff": tt(IdentifierTok, "iff"),
+
+		// Strings:
+		` "" `:             tt(StringTok, `""`),
+		`"abc def"`:        tt(StringTok, `"abc def"`),
+		`"\tHello, 世界！\n"`: tt(StringTok, `"\tHello, 世界！\n"`),
 	}
 
 	for input, expected := range table {
 		tokens, err := Tokenise(input)
 
 		if err != nil {
-			t.Errorf("Tokenise(%#v) produced unexpected error: %v", input, err)
+			t.Errorf("Tokenise(%#v) produced unexpected error: \n%v", input, err)
 		} else if len(tokens) != 1 {
 			t.Errorf("Tokenise(%#v) expected to return 1 token but instead returned %d tokens", input, len(tokens))
 		} else {
@@ -152,7 +157,7 @@ func TestTokenisePositionLine(t *testing.T) {
 		tokens, err := Tokenise(input)
 
 		if err != nil {
-			t.Errorf("Tokenise(%#v) produced unexpected error: %v", input, err)
+			t.Errorf("Tokenise(%#v) produced unexpected error: \n%v", input, err)
 		} else if len(tokens) != len(positions) {
 			t.Errorf("Tokenise(%#v) returned %d tokens but %d were expected", input, len(tokens), len(positions))
 		} else {

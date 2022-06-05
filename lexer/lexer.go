@@ -107,6 +107,12 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 			l.currentState = commentState
 
+		} else if c == '"' {
+			// A double quote " character indicates the start of a string so change to
+			// string state.
+
+			l.currentState = stringState
+
 		} else if runeIsNumeral(c) || (c == '~' && runeIsNumeral(peek)) {
 			// If character is `[0-9]` or character and peek are `~[0-9]` (i.e., negative
 			// number)...
@@ -175,20 +181,32 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 		if c == '.' {
 			l.currentState = floatState
-		} else if peek != '.' && !runeIsNumeral(peek) {
 
+		} else if peek != '.' && !runeIsNumeral(peek) {
 			l.addToken(IntTok)
 		}
 
 	case floatState:
 		if peek == '.' {
 			return &LexicalError{pos: l.pos, line: currentLine, msg: "found multiple decimal point characters found in floating-point literal"}
-		} else if !runeIsNumeral(peek) {
+
+		}
+
+		if !runeIsNumeral(peek) {
 			if runeIsIdentChar(peek) {
 				return &LexicalError{pos: l.pos, line: currentLine, msg: "floating-point literal and identifier must be separated by whitespace"}
 			}
 
 			l.addToken(FloatTok)
+		}
+
+	case stringState:
+		if c == '"' {
+			l.addToken(StringTok)
+		}
+
+		if c == '\\' && !runeIsOneOf(peek, `"tn\`) {
+			return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("found invalid escape sequence character %#v found in string literal", peek)}
 		}
 	}
 
@@ -228,4 +246,5 @@ const (
 	commentState
 	intState
 	floatState
+	stringState
 )
