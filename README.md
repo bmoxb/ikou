@@ -32,16 +32,17 @@
 * Colon `:`
 * Quote `'`
 * Backquote `,`
-* Integer `[0-9]+`
-* Float `[0-9]+\.[0-9]+`
+* Integer `~?[0-9]+`
+* Float `~?[0-9]+\.[0-9]+`
 * String `"[^"]*"`
   * Escape sequences `\"`, `\n`, `\t` can be used inside string literals.
 * Character `(\\.|\\space|\\newline|\\tab)`
 
 ### Literals
 
-* Integer: `0`, `12`, `5746782678`
-* Float: `5.12`, `123.456`, `.5`, `1.`
+* Integer: `0`, `12`, `5746782678`, `~12`
+  * Note that negative numbers are indicated with `~` and not `-`. This is to prevent confusion with identifiers which can contain both `-` and numeral characters.
+* Float: `5.12`, `123.456`, `.5`, `1.`, `~12.2`
 * List: `[<expr> <expr> ...]`
   * Equivalent to `(list <expr> <expr> ...)` in most other Lisp languages.
 * Character: `\a`, `\!`, `\夢`, `\space`, `\newline`, `\tab`

@@ -17,9 +17,16 @@ func tp(line, pos uint) TokenPosition {
 
 func TestTokeniseSingleTokens(t *testing.T) {
 	table := map[string]tokenTest{
-		" (":           tt(OpenTok, "("),
-		") ":           tt(CloseTok, ")"),
-		"\t: ":         tt(ColonTok, ":"),
+		// Single character tokens:
+		" (":    tt(OpenTok, "("),
+		") ":    tt(CloseTok, ")"),
+		"[":     tt(SquareOpenTok, "["),
+		" ] ":   tt(SquareCloseTok, "]"),
+		"\t: ":  tt(ColonTok, ":"),
+		"'":     tt(QuoteTok, "'"),
+		"\n,\n": tt(BackquoteTok, ","),
+
+		// Identifiers:
 		"abc\n":        tt(IdentifierTok, "abc"),
 		"abc-def+":     tt(IdentifierTok, "abc-def+"),
 		"ABC_123":      tt(IdentifierTok, "ABC_123"),
@@ -29,20 +36,26 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"\t--  ":       tt(IdentifierTok, "--"),
 		" a":           tt(IdentifierTok, "a"),
 		"; comment\na": tt(IdentifierTok, "a"),
-		"12":           tt(IntTok, "12"),
-		"0":            tt(IntTok, "0"),
-		"1.":           tt(FloatTok, "1."),
-		".1":           tt(FloatTok, ".1"),
-		"-1234":        tt(IntTok, "-1234"),
-		"12.5":         tt(FloatTok, "12.5"),
-		"-0.5":         tt(FloatTok, "-0.5"),
-		"let":          tt(LetTok, "let"),
-		"Let":          tt(IdentifierTok, "Let"),
-		"if":           tt(IfTok, "if"),
-		"iff":          tt(IdentifierTok, "iff"),
 		"a-":           tt(IdentifierTok, "a-"),
 		"aa-":          tt(IdentifierTok, "aa-"),
 		"a-5":          tt(IdentifierTok, "a-5"),
+		"-1":           tt(IdentifierTok, "-1"),
+		"-":            tt(IdentifierTok, "-"),
+
+		// Numbers:
+		"12":    tt(IntTok, "12"),
+		"0":     tt(IntTok, "0"),
+		"1.":    tt(FloatTok, "1."),
+		".1":    tt(FloatTok, ".1"),
+		"~1234": tt(IntTok, "~1234"),
+		"12.5":  tt(FloatTok, "12.5"),
+		"~0.5":  tt(FloatTok, "~0.5"),
+
+		// Keywords:
+		"let": tt(LetTok, "let"),
+		"Let": tt(IdentifierTok, "Let"),
+		"if":  tt(IfTok, "if"),
+		"iff": tt(IdentifierTok, "iff"),
 	}
 
 	for input, expected := range table {
@@ -85,6 +98,8 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"#",
 		"aa#",
 		"#aa",
+		"~",
+		"a~",
 	}
 
 	for _, input := range invalid {
@@ -98,8 +113,14 @@ func TestTokeniseSingleTokens(t *testing.T) {
 
 func TestTokeniseMultipleTokens(t *testing.T) {
 	table := map[string][]tokenTest{
+		// Input edge cases:
+		"":   []tokenTest{},
+		" ":  []tokenTest{},
+		";":  []tokenTest{},
+		"\n": []tokenTest{},
+
 		"(+ 15 25)":                           []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "+"), tt(IntTok, "15"), tt(IntTok, "25"), tt(CloseTok, ")")},
-		"\t( - -0.1 0.2 )\n":                  []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "-0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
+		"\t( - ~0.1 0.2 )\n":                  []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "~0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
 		"; comment\nlet0 0 let\tLET; comment": []tokenTest{tt(IdentifierTok, "let0"), tt(IntTok, "0"), tt(LetTok, "let"), tt(IdentifierTok, "LET")},
 	}
 
@@ -107,7 +128,7 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 		tokens, err := Tokenise(input)
 
 		if err != nil {
-			t.Errorf("Tokenise(%#v) produced unexpected error: %v", input, err)
+			t.Errorf("Tokenise(%#v) produced unexpected error: \n%v", input, err)
 		} else if len(tokens) != len(expected) {
 			t.Errorf("Tokenise(%#v) returned %d tokens but %d were expected", input, len(tokens), len(expected))
 		} else {

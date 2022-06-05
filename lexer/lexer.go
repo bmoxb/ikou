@@ -21,6 +21,16 @@ var finalTokenTypeMap = map[state]TokenType{
 	floatState: FloatTok,
 }
 
+var singleCharacterTokenMap = map[rune]TokenType{
+	'(':  OpenTok,
+	')':  CloseTok,
+	'[':  SquareOpenTok,
+	']':  SquareCloseTok,
+	':':  ColonTok,
+	'\'': QuoteTok,
+	',':  BackquoteTok,
+}
+
 func Tokenise(input string) ([]Token, error) {
 	if input == "" {
 		return make([]Token, 0), nil
@@ -86,52 +96,60 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 	switch l.currentState {
 	case initialState:
-		switch c {
-		case '(':
-			l.addToken(OpenTok)
-		case ')':
-			l.addToken(CloseTok)
-		case ':':
-			l.addToken(ColonTok)
-		case ';':
+		singleCharTok, isSingleCharTok := singleCharacterTokenMap[c]
+
+		if isSingleCharTok {
+			l.addToken(singleCharTok)
+
+		} else if c == ';' {
+			// A semicolon ; character indicates the start of a comment so change to
+			// comment state.
+
 			l.currentState = commentState
-		default:
-			// Character is `[0-9]` or character and peek are `-[0-9]` (i.e., negative number).
-			if runeIsNumeral(c) || (c == '-' && runeIsNumeral(peek)) {
-				// If more than just the one numeral then change state, otherwise add the single number as an integer token.
-				if runeIsNumeral(peek) || peek == '.' {
-					l.currentState = intState
-				} else {
-					l.addToken(IntTok)
-				}
 
-				// Character and peek are in the form `\.[0-9]` (i.e., a float literal).
-			} else if c == '.' && runeIsNumeral(peek) {
-				l.currentState = floatState
+		} else if runeIsNumeral(c) || (c == '~' && runeIsNumeral(peek)) {
+			// If character is `[0-9]` or character and peek are `~[0-9]` (i.e., negative
+			// number)...
 
-				// Character could be part of an identifier.
-			} else if runeIsIdentChar(c) {
-				// If peek is also an identifier character then change state.
-				if runeIsIdentChar(peek) {
-					l.currentState = identState
-					// Ensure the identifier is not immediately followed by a number literal.
-				} else if runeIsNumeral(peek) || runeIsOneOf(peek, ".-") {
-					return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and number literal must be separated by whitespace"}
-					// If there is just a single identifier character alone then add it is as an identifier token.
-				} else {
-					l.addToken(IdentifierTok)
-				}
+			// If more than just the one numeral then change state, otherwise add the
+			// single number as an integer token.
+			if runeIsNumeral(peek) || peek == '.' {
+				l.currentState = intState
+			} else {
+				l.addToken(IntTok)
+			}
+
+		} else if c == '.' && runeIsNumeral(peek) {
+			// If character and peek are in the form `\.[0-9]` (i.e., a float literal),
+			// change to float state.
+
+			l.currentState = floatState
+
+		} else if runeIsIdentChar(c) {
+			// If character could be part of an identifier...
+
+			// If peek is also an identifier character then change state.
+			if runeIsIdentChar(peek) {
+				l.currentState = identState
+				// Ensure the identifier is not immediately followed by a number literal.
+			} else if runeIsNumeral(peek) || runeIsOneOf(peek, ".-") {
+				return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and number literal must be separated by whitespace"}
+				// If there is just a single identifier character alone then add it is as an identifier token.
+			} else {
+				l.addToken(IdentifierTok)
+			}
+
+		} else {
+			if runeIsOneOf(c, " \t\n\r") {
+				// Discard any whitespace characters.
+
+				l.discardToken()
 
 			} else {
-				// Discard any whitespace characters.
-				if runeIsOneOf(c, " \t\n\r") {
-					l.discardToken()
+				// Any non-whitespace unexpected characters result in an error.
 
-					// Any non-whitespace unexpected characters result in an error.
-				} else {
-					l.pos.HorizontalPosition -= 1
-					return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("unexpected character: %q", c)}
-				}
+				l.pos.HorizontalPosition -= 1
+				return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("unexpected character: %q", c)}
 			}
 		}
 
