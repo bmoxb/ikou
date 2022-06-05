@@ -12,6 +12,10 @@ func runeIsNumeral(r rune) bool {
 	return '0' <= r && r <= '9'
 }
 
+func runeIsWhitespace(r rune) bool {
+	return runeIsOneOf(r, " \t\n\r")
+}
+
 func runeIsOneOf(r rune, chars string) bool {
 	allowedRunes := make(map[rune]struct{})
 

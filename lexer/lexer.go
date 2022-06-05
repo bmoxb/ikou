@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var keywordMap = map[string]TokenType{
+var keywordTokenTypeMap = map[string]TokenType{
 	"true":   TrueTok,
 	"false":  FalseTok,
 	"lambda": LambdaTok,
@@ -15,13 +15,7 @@ var keywordMap = map[string]TokenType{
 	"define": DefineTok,
 }
 
-var finalTokenTypeMap = map[state]TokenType{
-	identState: IdentifierTok,
-	intState:   IntTok,
-	floatState: FloatTok,
-}
-
-var singleCharacterTokenMap = map[rune]TokenType{
+var singleCharacterTokenTypeMap = map[rune]TokenType{
 	'(':  OpenTok,
 	')':  CloseTok,
 	'[':  SquareOpenTok,
@@ -29,6 +23,19 @@ var singleCharacterTokenMap = map[rune]TokenType{
 	':':  ColonTok,
 	'\'': QuoteTok,
 	',':  BackquoteTok,
+}
+
+var validCharacterLiterals = map[string]struct{}{
+	`\space`:   struct{}{},
+	`\tab`:     struct{}{},
+	`\newline`: struct{}{},
+}
+
+var whitespaceNameMap = map[rune]string{
+	' ':  "space",
+	'\t': "tab",
+	'\n': "newline",
+	'\r': "newline",
 }
 
 func Tokenise(input string) ([]Token, error) {
@@ -65,7 +72,10 @@ func Tokenise(input string) ([]Token, error) {
 		return nil, err
 	}
 
-	l.eof()
+	err = l.eof(lines[linesIndex])
+	if err != nil {
+		return nil, err
+	}
 
 	return l.tokens, nil
 }
@@ -96,10 +106,10 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 	switch l.currentState {
 	case initialState:
-		singleCharTok, isSingleCharTok := singleCharacterTokenMap[c]
+		ty, isSingleCharTok := singleCharacterTokenTypeMap[c]
 
 		if isSingleCharTok {
-			l.addToken(singleCharTok)
+			l.addSpecificTokenType(ty)
 
 		} else if c == ';' {
 			// A semicolon ; character indicates the start of a comment so change to
@@ -113,16 +123,27 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 			l.currentState = stringState
 
+		} else if c == '\\' {
+			// A backslash \ character indicates a character literal so change to
+			// character state.
+
+			if runeIsWhitespace(peek) {
+				whitespace := whitespaceNameMap[peek]
+				return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("A %s character cannot be used as a character literal - consider using `\\%v` instead", whitespace, whitespace)}
+			}
+
+			l.currentState = characterState
+
 		} else if runeIsNumeral(c) || (c == '~' && runeIsNumeral(peek)) {
 			// If character is `[0-9]` or character and peek are `~[0-9]` (i.e., negative
 			// number)...
 
-			// If more than just the one numeral then change state, otherwise add the
-			// single number as an integer token.
-			if runeIsNumeral(peek) || peek == '.' {
-				l.currentState = intState
-			} else {
-				l.addToken(IntTok)
+			l.currentState = intState
+
+			// If the following token is not a numeral nor a decimal point then just add
+			// the token.
+			if !runeIsNumeral(peek) && peek != '.' {
+				return l.addToken(currentLine)
 			}
 
 		} else if c == '.' && runeIsNumeral(peek) {
@@ -134,19 +155,15 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		} else if runeIsIdentChar(c) {
 			// If character could be part of an identifier...
 
-			// If peek is also an identifier character then change state.
-			if runeIsIdentChar(peek) {
-				l.currentState = identState
-				// Ensure the identifier is not immediately followed by a number literal.
-			} else if runeIsNumeral(peek) || runeIsOneOf(peek, ".-") {
-				return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and number literal must be separated by whitespace"}
+			l.currentState = identState
+
+			if !runeIsIdentChar(peek) {
 				// If there is just a single identifier character alone then add it is as an identifier token.
-			} else {
-				l.addToken(IdentifierTok)
+				return l.addToken(currentLine)
 			}
 
 		} else {
-			if runeIsOneOf(c, " \t\n\r") {
+			if runeIsWhitespace(c) {
 				// Discard any whitespace characters.
 
 				l.discardToken()
@@ -160,18 +177,12 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		}
 
 	case identState:
-		if peek == '.' {
+		if c == '.' || peek == '.' {
 			return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and floating-point literal must be separated by whitespace"}
 		}
 
 		if !runeIsIdentChar(peek) {
-			keyword, isKeyword := keywordMap[l.currentString.String()]
-
-			if isKeyword {
-				l.addToken(keyword)
-			} else {
-				l.addToken(IdentifierTok)
-			}
+			return l.addToken(currentLine)
 		}
 
 	case intState:
@@ -183,13 +194,12 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 			l.currentState = floatState
 
 		} else if peek != '.' && !runeIsNumeral(peek) {
-			l.addToken(IntTok)
+			return l.addToken(currentLine)
 		}
 
 	case floatState:
 		if peek == '.' {
 			return &LexicalError{pos: l.pos, line: currentLine, msg: "found multiple decimal point characters found in floating-point literal"}
-
 		}
 
 		if !runeIsNumeral(peek) {
@@ -197,30 +207,77 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 				return &LexicalError{pos: l.pos, line: currentLine, msg: "floating-point literal and identifier must be separated by whitespace"}
 			}
 
-			l.addToken(FloatTok)
+			return l.addToken(currentLine)
 		}
 
 	case stringState:
 		if c == '"' {
-			l.addToken(StringTok)
+			return l.addToken(currentLine)
+
+		} else if c == '\\' && !runeIsOneOf(peek, `"tn\`) {
+			return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("found invalid escape sequence \\%c found in string literal", peek)}
 		}
 
-		if c == '\\' && !runeIsOneOf(peek, `"tn\`) {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("found invalid escape sequence character %#v found in string literal", peek)}
+	case characterState:
+		if !runeIsAlpha(peek) {
+			return l.addToken(currentLine)
 		}
 	}
 
 	return nil
 }
 
-func (l *lexer) eof() {
-	ty, isFinalToken := finalTokenTypeMap[l.currentState]
-	if isFinalToken {
-		l.addToken(ty)
+func (l *lexer) eof(currentLine string) error {
+	if l.currentState == stringState {
+		return &LexicalError{pos: l.pos, line: currentLine, msg: "reached end of file during evaluation of a string literal"}
 	}
+
+	return l.addToken(currentLine)
 }
 
-func (l *lexer) addToken(ty TokenType) {
+func (l *lexer) addToken(currentLine string) error {
+	var ty TokenType
+
+	switch l.currentState {
+	case initialState, commentState:
+		return nil // discard
+
+	case identState:
+		keywordTokType, isKeyword := keywordTokenTypeMap[l.currentString.String()]
+
+		if isKeyword {
+			ty = keywordTokType
+		} else {
+			ty = IdentifierTok
+		}
+
+	case intState:
+		ty = IntTok
+
+	case floatState:
+		ty = FloatTok
+
+	case stringState:
+		ty = StringTok
+
+	case characterState:
+		ty = CharacterTok
+
+		s := l.currentString.String()
+
+		_, valid := validCharacterLiterals[s]
+
+		if len(s) < 2 || (len(s) > 2 && !valid) {
+			return &LexicalError{pos: l.pos, line: currentLine, msg: "invalid character literal"}
+		}
+	}
+
+	l.addSpecificTokenType(ty)
+
+	return nil
+}
+
+func (l *lexer) addSpecificTokenType(ty TokenType) {
 	tok := Token{
 		Type:           ty,
 		Position:       l.pos,
@@ -247,4 +304,5 @@ const (
 	intState
 	floatState
 	stringState
+	characterState
 )

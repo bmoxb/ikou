@@ -41,6 +41,7 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"a-5":          tt(IdentifierTok, "a-5"),
 		"-1":           tt(IdentifierTok, "-1"),
 		"-":            tt(IdentifierTok, "-"),
+		"a5":           tt(IdentifierTok, "a5"),
 
 		// Numbers:
 		"12":    tt(IntTok, "12"),
@@ -61,6 +62,12 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		` "" `:             tt(StringTok, `""`),
 		`"abc def"`:        tt(StringTok, `"abc def"`),
 		`"\tHello, 世界！\n"`: tt(StringTok, `"\tHello, 世界！\n"`),
+
+		// Characters:
+		`\a`:       tt(CharacterTok, `\a`),
+		`\tab`:     tt(CharacterTok, `\tab`),
+		`\space`:   tt(CharacterTok, `\space`),
+		`\newline`: tt(CharacterTok, `\newline`),
 	}
 
 	for input, expected := range table {
@@ -94,6 +101,7 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"55.aa",
 		"a.5",
 		"aa.55",
+		"a0.5",
 		"a.a",
 		"aa.aa",
 		".a",
@@ -105,6 +113,12 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"#aa",
 		"~",
 		"a~",
+		`\`,
+		` \ `,
+		`\abc`,
+		"\\\n",
+		`"`,
+		`"abc`,
 	}
 
 	for _, input := range invalid {
