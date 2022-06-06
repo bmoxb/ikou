@@ -91,11 +91,13 @@ func TestTokeniseSingleTokens(t *testing.T) {
 	}
 
 	invalid := []string{
+		// Multiple decimal points in float literal:
 		"1.2.1",
-		".",
-		"@",
-		"a\\",
-		"12abc",
+		".2.",
+		"1.2.",
+		".2.1",
+
+		// Identifiers and number literals:
 		"5.5abc",
 		"5.a",
 		"55.aa",
@@ -106,19 +108,33 @@ func TestTokeniseSingleTokens(t *testing.T) {
 		"aa.aa",
 		".a",
 		"a.",
+		"12abc",
+		"1a",
+
+		// Negation symbol:
+		"~",
+		"a~",
+		"~a",
+
+		// Character literal:
+		`a\`,
+		`\`,
+		` \ `,
+		`\abc`,
+		"\\\n",
+
+		// EOF during string literal:
+		`"`,
+		`"abc`,
+
+		// Misc:
+		".",
+		"@",
 		"aa-12.5",
 		"a#",
 		"#",
 		"aa#",
 		"#aa",
-		"~",
-		"a~",
-		`\`,
-		` \ `,
-		`\abc`,
-		"\\\n",
-		`"`,
-		`"abc`,
 	}
 
 	for _, input := range invalid {
@@ -138,9 +154,15 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 		";":  []tokenTest{},
 		"\n": []tokenTest{},
 
-		"(+ 15 25)":                           []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "+"), tt(IntTok, "15"), tt(IntTok, "25"), tt(CloseTok, ")")},
-		"\t( - ~0.1 0.2 )\n":                  []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "~0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
-		"; comment\nlet0 0 let\tLET; comment": []tokenTest{tt(IdentifierTok, "let0"), tt(IntTok, "0"), tt(LetTok, "let"), tt(IdentifierTok, "LET")},
+		// Spacing:
+		"\t( - ~0.1 0.2 )\n": []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "~0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
+		`( ( a "b" ) 12.5 )`: []tokenTest{tt(OpenTok, "("), tt(OpenTok, "("), tt(IdentifierTok, "a"), tt(StringTok, `"b"`), tt(CloseTok, ")"), tt(FloatTok, "12.5"), tt(CloseTok, ")")},
+
+		// Minimal spacing:
+		"(+ 15 25)":                          []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "+"), tt(IntTok, "15"), tt(IntTok, "25"), tt(CloseTok, ")")},
+		`"abc""def"`:                         []tokenTest{tt(StringTok, `"abc"`), tt(StringTok, `"def"`)},
+		"; comment\nlet0 0 let\tLET;comment": []tokenTest{tt(IdentifierTok, "let0"), tt(IntTok, "0"), tt(LetTok, "let"), tt(IdentifierTok, "LET")},
+		"((\n12.5\n\"\"))":                   []tokenTest{tt(OpenTok, "("), tt(OpenTok, "("), tt(FloatTok, "12.5"), tt(StringTok, `""`), tt(CloseTok, ")"), tt(CloseTok, ")")},
 	}
 
 	for input, expected := range table {

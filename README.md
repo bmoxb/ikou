@@ -8,7 +8,7 @@
   * [#] Define all necessary token types
   * [#] Handle single character tokens (open close brackets, quotes, etc.)
   * [#] Handle number tokens (integers and floats)
-  * [ ] Handle character tokens
+  * [#] Handle character tokens
   * [#] Handle identifier tokens
   * [#] Handle string tokens
   * [#] Handle comments

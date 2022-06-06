@@ -129,7 +129,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 			if runeIsWhitespace(peek) {
 				whitespace := whitespaceNameMap[peek]
-				return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("A %s character cannot be used as a character literal - consider using `\\%v` instead", whitespace, whitespace)}
+				return l.makeError(currentLine, fmt.Sprintf("A %s character cannot be used as a character literal - consider using `\\%v` instead", whitespace, whitespace))
 			}
 
 			l.currentState = characterState
@@ -137,6 +137,10 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		} else if runeIsNumeral(c) || (c == '~' && runeIsNumeral(peek)) {
 			// If character is `[0-9]` or character and peek are `~[0-9]` (i.e., negative
 			// number)...
+
+			if !runeIsNumeral(peek) && runeIsIdentChar(peek) {
+				return l.makeIntIdentSepError(currentLine)
+			}
 
 			l.currentState = intState
 
@@ -155,6 +159,10 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		} else if runeIsIdentChar(c) {
 			// If character could be part of an identifier...
 
+			if peek == '.' {
+				return l.makeIdentPeriodSepError(currentLine)
+			}
+
 			l.currentState = identState
 
 			if !runeIsIdentChar(peek) {
@@ -172,13 +180,13 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 				// Any non-whitespace unexpected characters result in an error.
 
 				l.pos.HorizontalPosition -= 1
-				return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("unexpected character: %q", c)}
+				return l.makeError(currentLine, fmt.Sprintf("unexpected character: %q", c))
 			}
 		}
 
 	case identState:
 		if c == '.' || peek == '.' {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: "identifier and floating-point literal must be separated by whitespace"}
+			return l.makeIdentPeriodSepError(currentLine)
 		}
 
 		if !runeIsIdentChar(peek) {
@@ -187,7 +195,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 	case intState:
 		if !runeIsNumeral(peek) && runeIsIdentChar(peek) {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: "integer literal and identifier must be separated by whitespace"}
+			return l.makeIntIdentSepError(currentLine)
 		}
 
 		if c == '.' {
@@ -199,12 +207,12 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 	case floatState:
 		if peek == '.' {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: "found multiple decimal point characters found in floating-point literal"}
+			return l.makeError(currentLine, "found multiple decimal point characters found in floating-point literal")
 		}
 
 		if !runeIsNumeral(peek) {
 			if runeIsIdentChar(peek) {
-				return &LexicalError{pos: l.pos, line: currentLine, msg: "floating-point literal and identifier must be separated by whitespace"}
+				return l.makeError(currentLine, "floating-point literal and identifier must be separated by whitespace")
 			}
 
 			return l.addToken(currentLine)
@@ -215,7 +223,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 			return l.addToken(currentLine)
 
 		} else if c == '\\' && !runeIsOneOf(peek, `"tn\`) {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: fmt.Sprintf("found invalid escape sequence \\%c found in string literal", peek)}
+			return l.makeError(currentLine, fmt.Sprintf("found invalid escape sequence \\%c found in string literal", peek))
 		}
 
 	case characterState:
@@ -229,7 +237,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 func (l *lexer) eof(currentLine string) error {
 	if l.currentState == stringState {
-		return &LexicalError{pos: l.pos, line: currentLine, msg: "reached end of file during evaluation of a string literal"}
+		return l.makeError(currentLine, "reached end of file during evaluation of a string literal")
 	}
 
 	return l.addToken(currentLine)
@@ -268,7 +276,7 @@ func (l *lexer) addToken(currentLine string) error {
 		_, valid := validCharacterLiterals[s]
 
 		if len(s) < 2 || (len(s) > 2 && !valid) {
-			return &LexicalError{pos: l.pos, line: currentLine, msg: "invalid character literal"}
+			return l.makeError(currentLine, "invalid character literal")
 		}
 	}
 
@@ -293,6 +301,18 @@ func (l *lexer) addSpecificTokenType(ty TokenType) {
 func (l *lexer) discardToken() {
 	l.currentState = initialState
 	l.currentString.Reset()
+}
+
+func (l *lexer) makeError(currentLine, msg string) error {
+	return &LexicalError{pos: l.pos, line: currentLine, msg: msg}
+}
+
+func (l *lexer) makeIdentPeriodSepError(currentLine string) error {
+	return l.makeError(currentLine, "identifier and '.' must be separated by whitespace")
+}
+
+func (l *lexer) makeIntIdentSepError(currentLine string) error {
+	return l.makeError(currentLine, "integer literal and identifier must be separated by whitespace")
 }
 
 type state int
