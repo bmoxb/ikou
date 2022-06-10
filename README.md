@@ -13,8 +13,8 @@
   * [#] Handle string tokens
   * [#] Handle comments
   * [#] Appropriately track positioning of tokens (line number and horizontal position)
-  * [ ] Produce useful error messages
-  * [ ] Thorough testing
+  * [#] Produce useful error messages
+  * [#] Thorough testing
 * [ ] Parser
 * [ ] Bytecode generation
 * [ ] Virtual machine (bytecode execution)
