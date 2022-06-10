@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-)
 
-import "github.com/bmoxb/ikou/lexer"
+	"github.com/bmoxb/ikou/lexer"
+)
 
 func main() {
 	stdin := bufio.NewReader(os.Stdin)

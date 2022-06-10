@@ -26,9 +26,9 @@ var singleCharacterTokenTypeMap = map[rune]TokenType{
 }
 
 var validCharacterLiterals = map[string]struct{}{
-	`\space`:   struct{}{},
-	`\tab`:     struct{}{},
-	`\newline`: struct{}{},
+	`\space`:   {},
+	`\tab`:     {},
+	`\newline`: {},
 }
 
 var whitespaceNameMap = map[rune]string{

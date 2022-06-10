@@ -19,7 +19,7 @@ func runeIsWhitespace(r rune) bool {
 func runeIsOneOf(r rune, chars string) bool {
 	allowedRunes := make(map[rune]struct{})
 
-	for _, allowedRune := range []rune(chars) {
+	for _, allowedRune := range chars {
 		allowedRunes[allowedRune] = struct{}{}
 	}
 

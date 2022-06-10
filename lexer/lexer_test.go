@@ -149,20 +149,20 @@ func TestTokeniseSingleTokens(t *testing.T) {
 func TestTokeniseMultipleTokens(t *testing.T) {
 	table := map[string][]tokenTest{
 		// Input edge cases:
-		"":   []tokenTest{},
-		" ":  []tokenTest{},
-		";":  []tokenTest{},
-		"\n": []tokenTest{},
+		"":   {},
+		" ":  {},
+		";":  {},
+		"\n": {},
 
 		// Spacing:
-		"\t( - ~0.1 0.2 )\n": []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "~0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
-		`( ( a "b" ) 12.5 )`: []tokenTest{tt(OpenTok, "("), tt(OpenTok, "("), tt(IdentifierTok, "a"), tt(StringTok, `"b"`), tt(CloseTok, ")"), tt(FloatTok, "12.5"), tt(CloseTok, ")")},
+		"\t( - ~0.1 0.2 )\n": {tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "~0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
+		`( ( a "b" ) 12.5 )`: {tt(OpenTok, "("), tt(OpenTok, "("), tt(IdentifierTok, "a"), tt(StringTok, `"b"`), tt(CloseTok, ")"), tt(FloatTok, "12.5"), tt(CloseTok, ")")},
 
 		// Minimal spacing:
-		"(+ 15 25)":                          []tokenTest{tt(OpenTok, "("), tt(IdentifierTok, "+"), tt(IntTok, "15"), tt(IntTok, "25"), tt(CloseTok, ")")},
-		`"abc""def"`:                         []tokenTest{tt(StringTok, `"abc"`), tt(StringTok, `"def"`)},
-		"; comment\nlet0 0 let\tLET;comment": []tokenTest{tt(IdentifierTok, "let0"), tt(IntTok, "0"), tt(LetTok, "let"), tt(IdentifierTok, "LET")},
-		"((\n12.5\n\"\"))":                   []tokenTest{tt(OpenTok, "("), tt(OpenTok, "("), tt(FloatTok, "12.5"), tt(StringTok, `""`), tt(CloseTok, ")"), tt(CloseTok, ")")},
+		"(+ 15 25)":                          {tt(OpenTok, "("), tt(IdentifierTok, "+"), tt(IntTok, "15"), tt(IntTok, "25"), tt(CloseTok, ")")},
+		`"abc""def"`:                         {tt(StringTok, `"abc"`), tt(StringTok, `"def"`)},
+		"; comment\nlet0 0 let\tLET;comment": {tt(IdentifierTok, "let0"), tt(IntTok, "0"), tt(LetTok, "let"), tt(IdentifierTok, "LET")},
+		"((\n12.5\n\"\"))":                   {tt(OpenTok, "("), tt(OpenTok, "("), tt(FloatTok, "12.5"), tt(StringTok, `""`), tt(CloseTok, ")"), tt(CloseTok, ")")},
 	}
 
 	for input, expected := range table {
@@ -184,9 +184,9 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 
 func TestTokenisePositionLine(t *testing.T) {
 	table := map[string][]TokenPosition{
-		"( 21 )":           []TokenPosition{tp(1, 1), tp(1, 4), tp(1, 6)},
-		"12.5\n10":         []TokenPosition{tp(1, 4), tp(2, 2)},
-		"; comment\nabc\n": []TokenPosition{tp(2, 3)},
+		"( 21 )":           {tp(1, 1), tp(1, 4), tp(1, 6)},
+		"12.5\n10":         {tp(1, 4), tp(2, 2)},
+		"; comment\nabc\n": {tp(2, 3)},
 	}
 
 	for input, positions := range table {
