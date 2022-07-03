@@ -3,10 +3,12 @@ package lexer
 import (
 	"fmt"
 	"strings"
+
+	"github.com/bmoxb/ikou/tokens"
 )
 
 type LexicalError struct {
-	pos  TokenPosition
+	pos  tokens.Position
 	line string
 	msg  string
 }

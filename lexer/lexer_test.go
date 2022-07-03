@@ -1,73 +1,77 @@
 package lexer
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/bmoxb/ikou/tokens"
+)
 
 type tokenTest struct {
-	ty TokenType
+	ty tokens.Type
 	s  string
 }
 
-func tt(ty TokenType, s string) tokenTest {
+func tt(ty tokens.Type, s string) tokenTest {
 	return tokenTest{ty, s}
 }
 
-func tp(line, pos uint) TokenPosition {
-	return TokenPosition{Line: line, HorizontalPosition: pos}
+func tp(line, pos uint) tokens.Position {
+	return tokens.Position{Line: line, HorizontalPosition: pos}
 }
 
 func TestTokeniseSingleTokens(t *testing.T) {
 	table := map[string]tokenTest{
 		// Single character tokens:
-		" (":    tt(OpenTok, "("),
-		") ":    tt(CloseTok, ")"),
-		"[":     tt(SquareOpenTok, "["),
-		" ] ":   tt(SquareCloseTok, "]"),
-		"\t: ":  tt(ColonTok, ":"),
-		"'":     tt(QuoteTok, "'"),
-		"\n,\n": tt(BackquoteTok, ","),
+		" (":    tt(tokens.Open, "("),
+		") ":    tt(tokens.Close, ")"),
+		"[":     tt(tokens.SquareOpen, "["),
+		" ] ":   tt(tokens.SquareClose, "]"),
+		"\t: ":  tt(tokens.Colon, ":"),
+		"'":     tt(tokens.Quote, "'"),
+		"\n,\n": tt(tokens.Backquote, ","),
 
 		// Identifiers:
-		"abc\n":        tt(IdentifierTok, "abc"),
-		"abc-def+":     tt(IdentifierTok, "abc-def+"),
-		"ABC_123":      tt(IdentifierTok, "ABC_123"),
-		"\n+\n":        tt(IdentifierTok, "+"),
-		"  -  ":        tt(IdentifierTok, "-"),
-		"  +  ":        tt(IdentifierTok, "+"),
-		"\t--  ":       tt(IdentifierTok, "--"),
-		" a":           tt(IdentifierTok, "a"),
-		"; comment\na": tt(IdentifierTok, "a"),
-		"a-":           tt(IdentifierTok, "a-"),
-		"aa-":          tt(IdentifierTok, "aa-"),
-		"a-5":          tt(IdentifierTok, "a-5"),
-		"-1":           tt(IdentifierTok, "-1"),
-		"-":            tt(IdentifierTok, "-"),
-		"a5":           tt(IdentifierTok, "a5"),
+		"abc\n":        tt(tokens.Identifier, "abc"),
+		"abc-def+":     tt(tokens.Identifier, "abc-def+"),
+		"ABC_123":      tt(tokens.Identifier, "ABC_123"),
+		"\n+\n":        tt(tokens.Identifier, "+"),
+		"  -  ":        tt(tokens.Identifier, "-"),
+		"  +  ":        tt(tokens.Identifier, "+"),
+		"\t--  ":       tt(tokens.Identifier, "--"),
+		" a":           tt(tokens.Identifier, "a"),
+		"; comment\na": tt(tokens.Identifier, "a"),
+		"a-":           tt(tokens.Identifier, "a-"),
+		"aa-":          tt(tokens.Identifier, "aa-"),
+		"a-5":          tt(tokens.Identifier, "a-5"),
+		"-1":           tt(tokens.Identifier, "-1"),
+		"-":            tt(tokens.Identifier, "-"),
+		"a5":           tt(tokens.Identifier, "a5"),
 
 		// Numbers:
-		"12":    tt(IntTok, "12"),
-		"0":     tt(IntTok, "0"),
-		"1.":    tt(FloatTok, "1."),
-		".1":    tt(FloatTok, ".1"),
-		"~1234": tt(IntTok, "~1234"),
-		"12.5":  tt(FloatTok, "12.5"),
-		"~0.5":  tt(FloatTok, "~0.5"),
+		"12":    tt(tokens.Int, "12"),
+		"0":     tt(tokens.Int, "0"),
+		"1.":    tt(tokens.Float, "1."),
+		".1":    tt(tokens.Float, ".1"),
+		"~1234": tt(tokens.Int, "~1234"),
+		"12.5":  tt(tokens.Float, "12.5"),
+		"~0.5":  tt(tokens.Float, "~0.5"),
 
 		// Keywords:
-		"let": tt(LetTok, "let"),
-		"Let": tt(IdentifierTok, "Let"),
-		"if":  tt(IfTok, "if"),
-		"iff": tt(IdentifierTok, "iff"),
+		"let": tt(tokens.Let, "let"),
+		"Let": tt(tokens.Identifier, "Let"),
+		"if":  tt(tokens.If, "if"),
+		"iff": tt(tokens.Identifier, "iff"),
 
 		// Strings:
-		` "" `:             tt(StringTok, `""`),
-		`"abc def"`:        tt(StringTok, `"abc def"`),
-		`"\tHello, 世界！\n"`: tt(StringTok, `"\tHello, 世界！\n"`),
+		` "" `:             tt(tokens.String, `""`),
+		`"abc def"`:        tt(tokens.String, `"abc def"`),
+		`"\tHello, 世界！\n"`: tt(tokens.String, `"\tHello, 世界！\n"`),
 
 		// Characters:
-		`\a`:       tt(CharacterTok, `\a`),
-		`\tab`:     tt(CharacterTok, `\tab`),
-		`\space`:   tt(CharacterTok, `\space`),
-		`\newline`: tt(CharacterTok, `\newline`),
+		`\a`:       tt(tokens.Character, `\a`),
+		`\tab`:     tt(tokens.Character, `\tab`),
+		`\space`:   tt(tokens.Character, `\space`),
+		`\newline`: tt(tokens.Character, `\newline`),
 	}
 
 	for input, expected := range table {
@@ -155,14 +159,14 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 		"\n": {},
 
 		// Spacing:
-		"\t( - ~0.1 0.2 )\n": {tt(OpenTok, "("), tt(IdentifierTok, "-"), tt(FloatTok, "~0.1"), tt(FloatTok, "0.2"), tt(CloseTok, ")")},
-		`( ( a "b" ) 12.5 )`: {tt(OpenTok, "("), tt(OpenTok, "("), tt(IdentifierTok, "a"), tt(StringTok, `"b"`), tt(CloseTok, ")"), tt(FloatTok, "12.5"), tt(CloseTok, ")")},
+		"\t( - ~0.1 0.2 )\n": {tt(tokens.Open, "("), tt(tokens.Identifier, "-"), tt(tokens.Float, "~0.1"), tt(tokens.Float, "0.2"), tt(tokens.Close, ")")},
+		`( ( a "b" ) 12.5 )`: {tt(tokens.Open, "("), tt(tokens.Open, "("), tt(tokens.Identifier, "a"), tt(tokens.String, `"b"`), tt(tokens.Close, ")"), tt(tokens.Float, "12.5"), tt(tokens.Close, ")")},
 
 		// Minimal spacing:
-		"(+ 15 25)":                          {tt(OpenTok, "("), tt(IdentifierTok, "+"), tt(IntTok, "15"), tt(IntTok, "25"), tt(CloseTok, ")")},
-		`"abc""def"`:                         {tt(StringTok, `"abc"`), tt(StringTok, `"def"`)},
-		"; comment\nlet0 0 let\tLET;comment": {tt(IdentifierTok, "let0"), tt(IntTok, "0"), tt(LetTok, "let"), tt(IdentifierTok, "LET")},
-		"((\n12.5\n\"\"))":                   {tt(OpenTok, "("), tt(OpenTok, "("), tt(FloatTok, "12.5"), tt(StringTok, `""`), tt(CloseTok, ")"), tt(CloseTok, ")")},
+		"(+ 15 25)":                          {tt(tokens.Open, "("), tt(tokens.Identifier, "+"), tt(tokens.Int, "15"), tt(tokens.Int, "25"), tt(tokens.Close, ")")},
+		`"abc""def"`:                         {tt(tokens.String, `"abc"`), tt(tokens.String, `"def"`)},
+		"; comment\nlet0 0 let\tLET;comment": {tt(tokens.Identifier, "let0"), tt(tokens.Int, "0"), tt(tokens.Let, "let"), tt(tokens.Identifier, "LET")},
+		"((\n12.5\n\"\"))":                   {tt(tokens.Open, "("), tt(tokens.Open, "("), tt(tokens.Float, "12.5"), tt(tokens.String, `""`), tt(tokens.Close, ")"), tt(tokens.Close, ")")},
 	}
 
 	for input, expected := range table {
@@ -183,7 +187,7 @@ func TestTokeniseMultipleTokens(t *testing.T) {
 }
 
 func TestTokenisePositionLine(t *testing.T) {
-	table := map[string][]TokenPosition{
+	table := map[string][]tokens.Position{
 		"( 21 )":           {tp(1, 1), tp(1, 4), tp(1, 6)},
 		"12.5\n10":         {tp(1, 4), tp(2, 2)},
 		"; comment\nabc\n": {tp(2, 3)},

@@ -3,12 +3,12 @@ package parser
 import (
 	"strings"
 
-	"github.com/bmoxb/ikou/lexer"
+	"github.com/bmoxb/ikou/tokens"
 )
 
 type Node struct {
 	Content   Content
-	Position  lexer.TokenPosition
+	Position  tokens.Position
 	Quotation Quotation
 }
 
@@ -53,7 +53,7 @@ func (n Node) Children() []Node {
 	return listContent.children
 }
 
-func (n Node) Token() lexer.Token {
+func (n Node) Token() tokens.Token {
 	tokenContent := n.Content.(TokenContent)
 	return tokenContent.token
 }
@@ -76,7 +76,7 @@ type ListContent struct {
 func (c ListContent) content() {}
 
 type TokenContent struct {
-	token lexer.Token
+	token tokens.Token
 }
 
 func (c TokenContent) content() {}
@@ -89,7 +89,7 @@ const (
 	Backquoted
 )
 
-func newTokenNode(quote Quotation, token lexer.Token) Node {
+func newTokenNode(quote Quotation, token tokens.Token) Node {
 	return Node{
 		Content:   TokenContent{token},
 		Position:  token.Position,
@@ -97,7 +97,7 @@ func newTokenNode(quote Quotation, token lexer.Token) Node {
 	}
 }
 
-func newListNode(quote Quotation, children []Node, pos lexer.TokenPosition) Node {
+func newListNode(quote Quotation, children []Node, pos tokens.Position) Node {
 	return Node{
 		Content:   ListContent{children},
 		Position:  pos,
@@ -105,6 +105,6 @@ func newListNode(quote Quotation, children []Node, pos lexer.TokenPosition) Node
 	}
 }
 
-func newEmptyListNode(quote Quotation, pos lexer.TokenPosition) Node {
+func newEmptyListNode(quote Quotation, pos tokens.Position) Node {
 	return newListNode(quote, make([]Node, 0), pos)
 }

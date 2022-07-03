@@ -1,28 +1,28 @@
 package lexer
 
 import (
-	//"log"
 	"fmt"
+	"github.com/bmoxb/ikou/tokens"
 	"strings"
 )
 
-var keywordTokenTypeMap = map[string]TokenType{
-	"true":   TrueTok,
-	"false":  FalseTok,
-	"lambda": LambdaTok,
-	"if":     IfTok,
-	"let":    LetTok,
-	"define": DefineTok,
+var keywordTokenTypeMap = map[string]tokens.Type{
+	"true":   tokens.True,
+	"false":  tokens.False,
+	"lambda": tokens.Lambda,
+	"if":     tokens.If,
+	"let":    tokens.Let,
+	"define": tokens.Define,
 }
 
-var singleCharacterTokenTypeMap = map[rune]TokenType{
-	'(':  OpenTok,
-	')':  CloseTok,
-	'[':  SquareOpenTok,
-	']':  SquareCloseTok,
-	':':  ColonTok,
-	'\'': QuoteTok,
-	',':  BackquoteTok,
+var singleCharacterTokenTypeMap = map[rune]tokens.Type{
+	'(':  tokens.Open,
+	')':  tokens.Close,
+	'[':  tokens.SquareOpen,
+	']':  tokens.SquareClose,
+	':':  tokens.Colon,
+	'\'': tokens.Quote,
+	',':  tokens.Backquote,
 }
 
 var validCharacterLiterals = map[string]struct{}{
@@ -38,14 +38,14 @@ var whitespaceNameMap = map[rune]string{
 	'\r': "newline",
 }
 
-func Tokenise(input string) ([]Token, error) {
+func Tokenise(input string) ([]tokens.Token, error) {
 	if input == "" {
-		return make([]Token, 0), nil
+		return make([]tokens.Token, 0), nil
 	}
 
 	l := lexer{
 		currentState: initialState,
-		pos:          TokenPosition{Line: 1, HorizontalPosition: 0},
+		pos:          tokens.Position{Line: 1, HorizontalPosition: 0},
 	}
 
 	lines := strings.Split(input, "\n")
@@ -81,10 +81,10 @@ func Tokenise(input string) ([]Token, error) {
 }
 
 type lexer struct {
-	tokens        []Token
+	tokens        []tokens.Token
 	currentState  state
 	currentString strings.Builder
-	pos           TokenPosition
+	pos           tokens.Position
 }
 
 func (l *lexer) processChar(c, peek rune, currentLine string) error {
@@ -95,7 +95,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 		l.pos.HorizontalPosition = 0
 
 		if l.currentState == commentState {
-			l.discardToken()
+			l.discarden()
 		}
 
 		return nil
@@ -106,10 +106,10 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 
 	switch l.currentState {
 	case initialState:
-		ty, isSingleCharTok := singleCharacterTokenTypeMap[c]
+		ty, isSingleChar := singleCharacterTokenTypeMap[c]
 
-		if isSingleCharTok {
-			l.addSpecificTokenType(ty)
+		if isSingleChar {
+			l.addSpecificenType(ty)
 
 		} else if c == ';' {
 			// A semicolon ; character indicates the start of a comment so change to
@@ -174,7 +174,7 @@ func (l *lexer) processChar(c, peek rune, currentLine string) error {
 			if runeIsWhitespace(c) {
 				// Discard any whitespace characters.
 
-				l.discardToken()
+				l.discarden()
 
 			} else {
 				// Any non-whitespace unexpected characters result in an error.
@@ -244,32 +244,32 @@ func (l *lexer) eof(currentLine string) error {
 }
 
 func (l *lexer) addToken(currentLine string) error {
-	var ty TokenType
+	var ty tokens.Type
 
 	switch l.currentState {
 	case initialState, commentState:
 		return nil // discard
 
 	case identState:
-		keywordTokType, isKeyword := keywordTokenTypeMap[l.currentString.String()]
+		keywordType, isKeyword := keywordTokenTypeMap[l.currentString.String()]
 
 		if isKeyword {
-			ty = keywordTokType
+			ty = keywordType
 		} else {
-			ty = IdentifierTok
+			ty = tokens.Identifier
 		}
 
 	case intState:
-		ty = IntTok
+		ty = tokens.Int
 
 	case floatState:
-		ty = FloatTok
+		ty = tokens.Float
 
 	case stringState:
-		ty = StringTok
+		ty = tokens.String
 
 	case characterState:
-		ty = CharacterTok
+		ty = tokens.Character
 
 		s := l.currentString.String()
 
@@ -280,13 +280,13 @@ func (l *lexer) addToken(currentLine string) error {
 		}
 	}
 
-	l.addSpecificTokenType(ty)
+	l.addSpecificenType(ty)
 
 	return nil
 }
 
-func (l *lexer) addSpecificTokenType(ty TokenType) {
-	tok := Token{
+func (l *lexer) addSpecificenType(ty tokens.Type) {
+	tok := tokens.Token{
 		Type:           ty,
 		Position:       l.pos,
 		OriginalString: l.currentString.String(),
@@ -298,7 +298,7 @@ func (l *lexer) addSpecificTokenType(ty TokenType) {
 	l.tokens = append(l.tokens, tok)
 }
 
-func (l *lexer) discardToken() {
+func (l *lexer) discarden() {
 	l.currentState = initialState
 	l.currentString.Reset()
 }
