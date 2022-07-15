@@ -2,8 +2,9 @@ package lexer
 
 import (
 	"fmt"
-	"github.com/bmoxb/ikou/tokens"
 	"strings"
+
+	"github.com/bmoxb/ikou/tokens"
 )
 
 var keywordTokenTypeMap = map[string]tokens.Type{

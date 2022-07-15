@@ -2,8 +2,8 @@ package lexer
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/bmoxb/ikou/errors"
 	"github.com/bmoxb/ikou/tokens"
 )
 
@@ -14,18 +14,5 @@ type LexicalError struct {
 }
 
 func (l *LexicalError) Error() string {
-	builder := strings.Builder{}
-	for i := 0; i < int(l.pos.HorizontalPosition); i++ {
-		builder.WriteRune(' ')
-	}
-
-	upper := strings.Builder{}
-	upper.WriteString(builder.String())
-	upper.WriteRune('▼')
-
-	lower := strings.Builder{}
-	lower.WriteString(builder.String())
-	lower.WriteRune('▲')
-
-	return fmt.Sprintf("| %s\n| %s\n| %s\n\nLexical error at %v - %s", upper.String(), l.line, lower.String(), l.pos, l.msg)
+	return fmt.Sprintf("%s\n\nLexical error at %v - %s", errors.BuildRelevantLineString(l.line, l.pos), l.pos, l.msg)
 }
