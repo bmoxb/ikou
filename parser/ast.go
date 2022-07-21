@@ -48,7 +48,7 @@ func (n Node) IsList() bool {
 	return is
 }
 
-func (n Node) Children() []Node {
+func (n Node) Children() []*Node {
 	listContent := n.Content.(ListContent)
 	return listContent.children
 }
@@ -58,11 +58,11 @@ func (n Node) Token() tokens.Token {
 	return tokenContent.token
 }
 
-func (n *Node) addChild(child Node) *Node {
+func (n *Node) addChild(child *Node) *Node {
 	oldChildren := n.Content.(ListContent).children
 	n.Content = ListContent{children: append(oldChildren, child)}
 	newChildren := n.Content.(ListContent).children
-	return &newChildren[len(newChildren)-1]
+	return newChildren[len(newChildren)-1]
 }
 
 type Content interface {
@@ -70,7 +70,7 @@ type Content interface {
 }
 
 type ListContent struct {
-	children []Node
+	children []*Node
 }
 
 func (c ListContent) content() {}
@@ -89,22 +89,22 @@ const (
 	Backquoted
 )
 
-func newTokenNode(quote Quotation, token tokens.Token) Node {
-	return Node{
+func newTokenNode(quote Quotation, token tokens.Token) *Node {
+	return &Node{
 		Content:   TokenContent{token},
 		Position:  token.Position,
 		Quotation: quote,
 	}
 }
 
-func newListNode(quote Quotation, children []Node, pos tokens.Position) Node {
-	return Node{
+func newListNode(quote Quotation, children []*Node, pos tokens.Position) *Node {
+	return &Node{
 		Content:   ListContent{children},
 		Position:  pos,
 		Quotation: quote,
 	}
 }
 
-func newEmptyListNode(quote Quotation, pos tokens.Position) Node {
-	return newListNode(quote, make([]Node, 0), pos)
+func newEmptyListNode(quote Quotation, pos tokens.Position) *Node {
+	return newListNode(quote, []*Node{}, pos)
 }

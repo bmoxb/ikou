@@ -19,10 +19,10 @@ func TestAddingChildren(t *testing.T) {
 func TestNodeString(t *testing.T) {
 	x := newListNode(
 		Unquoted,
-		[]Node{
+		[]*Node{
 			newListNode(
 				Quoted,
-				[]Node{
+				[]*Node{
 					newTokenNode(Unquoted, tokens.Token{OriginalString: "12.5"}),
 					newTokenNode(Backquoted, tokens.Token{OriginalString: "abc"}),
 				},
@@ -33,7 +33,7 @@ func TestNodeString(t *testing.T) {
 		tokens.Position{},
 	)
 	table := map[*Node]string{
-		&x: `('(12.5 ,abc) "hello")`,
+		x: `('(12.5 ,abc) "hello")`,
 	}
 
 	for node, expected := range table {
