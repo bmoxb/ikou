@@ -34,6 +34,10 @@ func Parse(toks []tokens.Token) (Node, error) {
 		return Node{}, p.makeError(fmt.Sprintf("Mismatched brackets - expected %d more closing bracket%v", n, plural))
 	}
 
+	if p.lastPopped == nil {
+		p.lastPopped = newEmptyListNode(Unquoted, tokens.Position{})
+	}
+
 	return *p.lastPopped, nil
 }
 
@@ -56,14 +60,14 @@ func (p *parser) processToken(tok tokens.Token) error {
 		child := newEmptyListNode(p.nextQuotationAndReset(), tok.Position)
 		p.push(child)
 
+	case tokens.Close:
+		err = p.pop()
+
 	case tokens.Quote:
 		err = p.setNextQuotation(Quoted)
 
 	case tokens.Backquote:
 		err = p.setNextQuotation(Backquoted)
-
-	case tokens.Close:
-		err = p.pop()
 
 	default:
 		node := newTokenNode(p.nextQuotationAndReset(), tok)
